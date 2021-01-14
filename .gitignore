@@ -30,3 +30,6 @@
 *.exe
 *.out
 *.app
+1.2/Assemblies/ProxyHeat.pdb
+1.2/Source/ProxyHeat/.vs/ProxyHeat/v16/.suo
+1.2/Source/ProxyHeat/obj/Debug/ProxyHeat.pdb

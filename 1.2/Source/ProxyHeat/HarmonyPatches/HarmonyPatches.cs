@@ -137,6 +137,7 @@ namespace ProxyHeat
 									Log.Message("Return job: " + pawn + " - " + affectedCell);
 									return JobMaker.MakeJob(JobDefOf.GotoSafeTemperature, affectedCell);
 								}
+
 							}
 						}
 						candidates.Remove(candidate);
