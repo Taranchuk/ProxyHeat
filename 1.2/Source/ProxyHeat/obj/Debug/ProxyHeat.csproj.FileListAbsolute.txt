@@ -1,0 +1,10 @@
+c:\GAMES\Rimworld\Mods\ProxyHeat\1.2\Source\ProxyHeat\bin\Debug\ProxyHeat.dll
+c:\GAMES\Rimworld\Mods\ProxyHeat\1.2\Source\ProxyHeat\bin\Debug\ProxyHeat.pdb
+c:\GAMES\Rimworld\Mods\ProxyHeat\1.2\Source\ProxyHeat\bin\Debug\0Harmony.dll
+c:\GAMES\Rimworld\Mods\ProxyHeat\1.2\Source\ProxyHeat\obj\Debug\ProxyHeat.csprojAssemblyReference.cache
+c:\GAMES\Rimworld\Mods\ProxyHeat\1.2\Source\ProxyHeat\obj\Debug\ProxyHeat.csproj.CoreCompileInputs.cache
+c:\GAMES\Rimworld\Mods\ProxyHeat\1.2\Source\ProxyHeat\obj\Debug\ProxyHeat.csproj.CopyComplete
+c:\GAMES\Rimworld\Mods\ProxyHeat\1.2\Source\ProxyHeat\obj\Debug\ProxyHeat.dll
+c:\GAMES\Rimworld\Mods\ProxyHeat\1.2\Source\ProxyHeat\obj\Debug\ProxyHeat.pdb
+c:\GAMES\Rimworld\Mods\ProxyHeat\1.2\Assemblies\ProxyHeat.dll
+c:\GAMES\Rimworld\Mods\ProxyHeat\1.2\Assemblies\ProxyHeat.pdb
