@@ -84,10 +84,7 @@ namespace ProxyHeat
 						var edifice = intVec.GetEdifice(map);
 						if (edifice == null || edifice.def.passability != Traversability.Impassable)
 						{
-							if (!this.parent.OccupiedRect().Contains(intVec))
-							{
-								affectedCells.Add(intVec);
-							}
+							affectedCells.Add(intVec);
 						}
 					}
 				}
