@@ -11,7 +11,7 @@ namespace ProxyHeat
 {
 	public class CompProperties_TemperatureSource : CompProperties
 	{
-		public int radius;
+		public float radius;
 		public float tempOutcome;
 		public bool dependsOnPower;
 		public bool dependsOnFuel;
