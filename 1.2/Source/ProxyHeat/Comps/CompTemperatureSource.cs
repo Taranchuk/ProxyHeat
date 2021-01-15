@@ -75,20 +75,24 @@ namespace ProxyHeat
 				var result = edifice == null || edifice.def.passability != Traversability.Impassable;
 				return result;
 			};
-			foreach (var intVec in GenRadial.RadialCellsAround(position, Props.radius, true))
-			{
-				if (GenSight.LineOfSight(position, intVec, map, validator: validator))
-                {
-					var edifice = intVec.GetEdifice(map);
-					if (edifice == null || edifice.def.passability != Traversability.Impassable)
-                    {
-						if (!this.parent.OccupiedRect().Contains(intVec))
-                        {
-							affectedCells.Add(intVec);
-                        }
+			foreach (var cell in this.parent.OccupiedRect().Cells)
+            {
+				foreach (var intVec in GenRadial.RadialCellsAround(cell, Props.radius, true))
+				{
+					if (GenSight.LineOfSight(position, intVec, map, validator: validator))
+					{
+						var edifice = intVec.GetEdifice(map);
+						if (edifice == null || edifice.def.passability != Traversability.Impassable)
+						{
+							if (!this.parent.OccupiedRect().Contains(intVec))
+							{
+								affectedCells.Add(intVec);
+							}
+						}
 					}
 				}
 			}
+
 			affectedCellsList.AddRange(affectedCells.ToList());
 			foreach (var cell in affectedCells)
             {
