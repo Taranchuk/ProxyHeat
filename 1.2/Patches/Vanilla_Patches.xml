@@ -2,7 +2,7 @@
 <Patch>
 	<Operation Class="PatchOperationSequence">
 		<operations>
-			<!-- Campfire -->
+		<!-- Campfire -->
 			<li Class="PatchOperationConditional">
 				<xpath>/Defs/ThingDef[defName = "Campfire"]/comps</xpath>
 				<success>Always</success>
@@ -17,13 +17,13 @@
 				<xpath>/Defs/ThingDef[defName = "Campfire"]/comps</xpath>
 				<value>
 					<li Class="ProxyHeat.CompProperties_TemperatureSource">
-						<radius>7</radius>
-						<tempOutcome>14</tempOutcome>
+						<radius>2.6</radius>
+						<tempOutcome>18</tempOutcome>
 						<dependsOnFuel>true</dependsOnFuel>
 					</li>
 				</value>
 			</li>
-			<!-- PassiveCooler -->
+		<!-- PassiveCooler -->
 			<li Class="PatchOperationConditional">
 				<xpath>/Defs/ThingDef[defName = "PassiveCooler"]/comps</xpath>
 				<success>Always</success>
@@ -38,13 +38,94 @@
 				<xpath>/Defs/ThingDef[defName = "PassiveCooler"]/comps</xpath>
 				<value>
 					<li Class="ProxyHeat.CompProperties_TemperatureSource">
-						<radius>7</radius>
-						<tempOutcome>-14</tempOutcome>
+						<radius>1.5</radius>
+						<tempOutcome>-6</tempOutcome>
 						<dependsOnFuel>true</dependsOnFuel>
 					</li>
 				</value>
 			</li>
+		<!-- SteamGeyser -->
+			<li Class="PatchOperationConditional">
+				<xpath>/Defs/ThingDef[defName = "SteamGeyser"]/comps</xpath>
+				<success>Always</success>
+				<nomatch Class="PatchOperationAdd">
+					<xpath>/Defs/ThingDef[defName = "SteamGeyser"]</xpath>
+					<value>
+						<comps />
+					</value>
+				</nomatch>
+			</li>
+			<li Class="PatchOperationAdd">
+				<xpath>/Defs/ThingDef[defName = "SteamGeyser"]/comps</xpath>
+				<value>
+					<li Class="ProxyHeat.CompProperties_TemperatureSource">
+						<radius>2.5</radius>
+						<tempOutcome>30</tempOutcome>
+					</li>
+				</value>
+			</li>
 			
+		<!-- Heater -->
+
+			<li Class="PatchOperationReplace">
+				<xpath>/Defs/ThingDef[defName = "Heater"]/tickerType</xpath>
+				<value>
+					<tickerType>Normal</tickerType>
+				</value>
+			</li>
+			<li Class="PatchOperationConditional">
+				<xpath>/Defs/ThingDef[defName = "Heater"]/comps</xpath>
+				<success>Always</success>
+				<nomatch Class="PatchOperationAdd">
+					<xpath>/Defs/ThingDef[defName = "Heater"]</xpath>
+					<value>
+						<comps />
+					</value>
+				</nomatch>
+			</li>
+			<li Class="PatchOperationAdd">
+				<xpath>/Defs/ThingDef[defName = "Heater"]/comps</xpath>
+				<value>
+					<li Class="ProxyHeat.CompProperties_TemperatureSource">
+						<radius>2</radius>
+						<tempOutcome>21</tempOutcome>
+						<dependsOnPower>true</dependsOnPower>
+					</li>
+				</value>
+			</li>
+
+		<!-- Cooler -->
+
+			<li Class="PatchOperationConditional">
+				<xpath>/Defs/ThingDef[defName = "Cooler"]/comps</xpath>
+				<success>Always</success>
+				<nomatch Class="PatchOperationAdd">
+					<xpath>/Defs/ThingDef[defName = "Cooler"]</xpath>
+					<value>
+						<comps />
+					</value>
+				</nomatch>
+			</li>
+
+			<li Class="PatchOperationReplace">
+				<xpath>/Defs/ThingDef[defName = "Cooler"]/tickerType</xpath>
+				<value>
+					<tickerType>Normal</tickerType>
+				</value>
+			</li>
+
+			<li Class="PatchOperationAdd">
+				<xpath>/Defs/ThingDef[defName = "Cooler"]/comps</xpath>
+				<value>
+					<li Class="ProxyHeat.CompProperties_TemperatureSource">
+						<radius>2</radius>
+						<tempOutcome>-10</tempOutcome>
+						<dependsOnPower>true</dependsOnPower>
+						<tileOffset>(0, 0, -1)</tileOffset>
+					</li>
+				</value>
+			</li>
+
 		</operations>
 	</Operation>
 </Patch>

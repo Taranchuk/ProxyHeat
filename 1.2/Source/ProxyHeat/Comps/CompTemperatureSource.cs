@@ -15,6 +15,7 @@ namespace ProxyHeat
 		public float tempOutcome;
 		public bool dependsOnPower;
 		public bool dependsOnFuel;
+		public IntVec3 tileOffset = IntVec3.Invalid;
 		public CompProperties_TemperatureSource()
 		{
 			compClass = typeof(CompTemperatureSource);
@@ -65,30 +66,40 @@ namespace ProxyHeat
 			affectedCells.Clear();
 			affectedCellsList.Clear();
 			proxyHeatManager.RemoveComp(this);
-			Func<IntVec3, bool> validator = delegate (IntVec3 cell)
+
+
+			HashSet<IntVec3> tempCells = new HashSet<IntVec3>();
+			foreach (var cell in GetCells())
 			{
-				if (!cell.Walkable(map))
-                {
-					return false;
-                }
-				var edifice = cell.GetEdifice(map);
-				var result = edifice == null || edifice.def.passability != Traversability.Impassable;
-				return result;
-			};
-			foreach (var cell in this.parent.OccupiedRect().Cells)
-            {
 				foreach (var intVec in GenRadial.RadialCellsAround(cell, Props.radius, true))
 				{
-					if (!affectedCells.Contains(intVec) && GenSight.LineOfSight(cell, intVec, map, validator: validator))
-					{
-						var edifice = intVec.GetEdifice(map);
-						if (edifice == null || edifice.def.passability != Traversability.Impassable)
-						{
-							affectedCells.Add(intVec);
-						}
-					}
+					tempCells.Add(intVec);
 				}
 			}
+
+			Predicate<IntVec3> validator = delegate (IntVec3 cell)
+			{
+				if (!tempCells.Contains(cell)) return false;
+				var edifice = cell.GetEdifice(map);
+				var result = edifice == null || edifice.def.passability != Traversability.Impassable || edifice == this.parent;
+				return result;
+			};
+
+			var offset = this.Props.tileOffset != IntVec3.Invalid ? this.parent.OccupiedRect().MovedBy(this.Props.tileOffset.RotatedBy(this.parent.Rotation)).CenterCell : position;
+			map.floodFiller.FloodFill(offset, validator, delegate (IntVec3 x)
+			{
+				if (tempCells.Contains(x))
+				{
+					var edifice = x.GetEdifice(map);
+					var result = edifice == null || edifice.def.passability != Traversability.Impassable || edifice == this.parent;
+					if (result && (GenSight.LineOfSight(offset, x, map) || offset.DistanceTo(x) <= 1.5f))
+					{
+						Log.Message("edifice: " + edifice + " - " + x.GetFirstBuilding(map));
+						affectedCells.Add(x);
+					}
+				}
+			}, int.MaxValue, rememberParents: false, (IEnumerable<IntVec3>)null);
+
 
 			affectedCellsList.AddRange(affectedCells.ToList());
 			foreach (var cell in affectedCells)
@@ -103,6 +114,18 @@ namespace ProxyHeat
 				}
 			}
 			proxyHeatManager.compTemperatures.Add(this);
+		}
+
+		public IEnumerable<IntVec3> GetCells()
+        {
+			if (this.Props.tileOffset != IntVec3.Invalid)
+			{
+				return this.parent.OccupiedRect().MovedBy(this.Props.tileOffset.RotatedBy(this.parent.Rotation)).Cells;
+			}
+			else
+			{
+				return this.parent.OccupiedRect().Cells;
+			}
 		}
         public override void PostDrawExtraSelectionOverlays()
         {
