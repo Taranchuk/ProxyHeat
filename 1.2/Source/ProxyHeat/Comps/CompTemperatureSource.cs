@@ -79,7 +79,7 @@ namespace ProxyHeat
             {
 				foreach (var intVec in GenRadial.RadialCellsAround(cell, Props.radius, true))
 				{
-					if (GenSight.LineOfSight(position, intVec, map, validator: validator))
+					if (GenSight.LineOfSight(cell, intVec, map, validator: validator))
 					{
 						var edifice = intVec.GetEdifice(map);
 						if (edifice == null || edifice.def.passability != Traversability.Impassable)
