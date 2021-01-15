@@ -42,6 +42,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Comps\CompTemperatureSource.cs" />
+    <Compile Include="HarmonyPatches\ProxyHeatManager.cs" />
     <Compile Include="HarmonyPatches\HarmonyPatches.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

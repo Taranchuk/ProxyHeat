@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
+using UnityEngine;
 using Verse;
 using Verse.AI;
 
@@ -15,7 +16,7 @@ namespace ProxyHeat
 	[StaticConstructorOnStartup]
 	internal static class HarmonyInit
 	{
-		public static Dictionary<Map, List<CompTemperatureSource>> compTemperatureSources = new Dictionary<Map, List<CompTemperatureSource>>();
+		public static Dictionary<Map, ProxyHeatManager> proxyHeatManagers = new Dictionary<Map, ProxyHeatManager>();
 		static HarmonyInit()
 		{
 			Harmony harmony = new Harmony("LongerCFloor.ProxyHeat");
@@ -27,19 +28,16 @@ namespace ProxyHeat
 		{
 			private static void Postfix(Building __instance)
 			{
-				var thingMap = __instance.Map;
-				if (thingMap != null && compTemperatureSources.TryGetValue(thingMap, out List<CompTemperatureSource> tempSources))
-				{
-					var position = __instance.Position;
-					for (int i = 0; i < tempSources.Count; i++)
-					{
-						var compTempSource = tempSources[i];
-						if (compTempSource.Active && compTempSource.IsNearby(position))
-						{
-							compTempSource.MarkDirty();
+				if (proxyHeatManagers.TryGetValue(__instance.Map, out ProxyHeatManager proxyHeatManager))
+                {
+					foreach (var comp in proxyHeatManager.compTemperatures)
+                    {
+						if (comp.InRangeAndActive(__instance.Position))
+                        {
+							proxyHeatManager.MarkDirty(comp);
 						}
-					}
-				}
+                    }
+                }
 			}
 		}
 
@@ -48,45 +46,132 @@ namespace ProxyHeat
 		{
 			private static void Prefix(Building __instance)
 			{
-				var thingMap = __instance.Map;
-				if (thingMap != null && compTemperatureSources.TryGetValue(thingMap, out List<CompTemperatureSource> tempSources))
+				if (proxyHeatManagers.TryGetValue(__instance.Map, out ProxyHeatManager proxyHeatManager))
 				{
-					var position = __instance.Position;
-					for (int i = 0; i < tempSources.Count; i++)
+					foreach (var comp in proxyHeatManager.compTemperatures)
 					{
-						var compTempSource = tempSources[i];
-						if (compTempSource.Active && compTempSource.InRange(position))
+						if (comp.InRangeAndActive(__instance.Position))
 						{
-							compTempSource.MarkDirty();
+							proxyHeatManager.MarkDirty(comp);
 						}
 					}
 				}
 			}
 		}
 
+		[HarmonyPatch(typeof(GlobalControls), "TemperatureString")]
+		public static class Patch_TemperatureString
+		{
+			private static string indoorsUnroofedStringCached;
+
+			private static int indoorsUnroofedStringCachedRoofCount = -1;
+
+			private static bool Prefix(ref string __result)
+			{
+				IntVec3 intVec = UI.MouseCell();
+				IntVec3 c = intVec;
+				Room room = intVec.GetRoom(Find.CurrentMap, RegionType.Set_All);
+				if (room == null)
+				{
+					for (int i = 0; i < 9; i++)
+					{
+						IntVec3 intVec2 = intVec + GenAdj.AdjacentCellsAndInside[i];
+						if (intVec2.InBounds(Find.CurrentMap))
+						{
+							Room room2 = intVec2.GetRoom(Find.CurrentMap, RegionType.Set_All);
+							if (room2 != null && ((!room2.PsychologicallyOutdoors && !room2.UsesOutdoorTemperature) || (!room2.PsychologicallyOutdoors && (room == null || room.PsychologicallyOutdoors)) || (room2.PsychologicallyOutdoors && room == null)))
+							{
+								c = intVec2;
+								room = room2;
+							}
+						}
+					}
+				}
+				if (room == null && intVec.InBounds(Find.CurrentMap))
+				{
+					Building edifice = intVec.GetEdifice(Find.CurrentMap);
+					if (edifice != null)
+					{
+						foreach (IntVec3 item in edifice.OccupiedRect().ExpandedBy(1).ClipInsideMap(Find.CurrentMap))
+						{
+							room = item.GetRoom(Find.CurrentMap, RegionType.Set_All);
+							if (room != null && !room.PsychologicallyOutdoors)
+							{
+								c = item;
+								break;
+							}
+						}
+					}
+				}
+				string text;
+				if (c.InBounds(Find.CurrentMap) && !c.Fogged(Find.CurrentMap) && room != null && !room.PsychologicallyOutdoors)
+				{
+					if (room.OpenRoofCount == 0)
+					{
+						text = "Indoors".Translate();
+					}
+					else
+					{
+						if (indoorsUnroofedStringCachedRoofCount != room.OpenRoofCount)
+						{
+							indoorsUnroofedStringCached = "IndoorsUnroofed".Translate() + " (" + room.OpenRoofCount.ToStringCached() + ")";
+							indoorsUnroofedStringCachedRoofCount = room.OpenRoofCount;
+						}
+						text = indoorsUnroofedStringCached;
+					}
+				}
+				else
+				{
+					text = "Outdoors".Translate();
+				}
+				var map = Find.CurrentMap;
+				float num = 0f;
+				if (room == null || c.Fogged(map))
+                {
+					num = GetOutDoorTemperature(Find.CurrentMap.mapTemperature.OutdoorTemp, map, c);
+				}
+				else if (room.UsesOutdoorTemperature)
+				{
+					num = GetOutDoorTemperature(room.Temperature, map, c);
+				}
+				else
+                {
+					num = room.Temperature;
+                }
+				__result = text + " " + num.ToStringTemperature("F0");
+				return false;
+			}
+
+			private static float GetOutDoorTemperature(float result, Map map, IntVec3 cell)
+            {
+				if (proxyHeatManagers.TryGetValue(map, out ProxyHeatManager proxyHeatManager))
+				{
+					if (proxyHeatManager.temperatureSources.TryGetValue(cell, out List<CompTemperatureSource> tempSources))
+					{
+						foreach (var tempSourceCandidate in tempSources)
+						{
+							result += tempSourceCandidate.Props.tempOutcome;
+						}
+					}
+				}
+				return result;
+			}
+		}
 
 		[HarmonyPatch(typeof(Thing), nameof(Thing.AmbientTemperature), MethodType.Getter)]
 		public static class Patch_AmbientTemperature
 		{
 			private static void Postfix(Thing __instance, ref float __result)
 			{
-				var thingMap = __instance.Map;
-				if (thingMap != null && compTemperatureSources.TryGetValue(thingMap, out List<CompTemperatureSource> tempSources) && __instance is Pawn)
-                {
-					var tempSourceCandidates = new List<CompTemperatureSource>();
-					var position = __instance.Position;
-					for (int i = 0; i < tempSources.Count; i++)
+				var map = __instance.Map;
+				if (map != null && proxyHeatManagers.TryGetValue(map, out ProxyHeatManager proxyHeatManager))
+				{
+					if (proxyHeatManager.temperatureSources.TryGetValue(__instance.Position, out List<CompTemperatureSource> tempSources))
 					{
-						var compTempSource = tempSources[i];
-						if (compTempSource.Active && compTempSource.IsNearby(position))
-                        {
-							tempSourceCandidates.Add(compTempSource);
-                        }
-					}
-					if (tempSourceCandidates.Any())
-                    {
-						var tempSource = tempSourceCandidates.OrderBy(x => x.position.DistanceTo(position)).First();
-						__result = tempSource.Props.tempOutcome;
+						foreach (var tempSourceCandidate in tempSources)
+						{
+							__result += tempSourceCandidate.Props.tempOutcome;
+						}
 					}
 				}
 			}
@@ -119,28 +204,34 @@ namespace ProxyHeat
 			{
 				Log.Message("SeekSafeTemperature: " + pawn);
 				var map = pawn.Map;
-				if (pawn.Position.UsesOutdoorTemperature(map) && HarmonyInit.compTemperatureSources.TryGetValue(map, out List<CompTemperatureSource> temperatureSources))
+				if (pawn.Position.UsesOutdoorTemperature(map) && proxyHeatManagers.TryGetValue(map, out ProxyHeatManager proxyHeatManager))
 				{
-					var candidates = temperatureSources.Where(x => tempRange.Includes(x.Props.tempOutcome)).OrderBy(x => pawn.Position.DistanceTo(x.position)).ToList();
+					var candidates = new List<IntVec3>();
+					foreach (var tempSource in proxyHeatManager.temperatureSources)
+                    {
+						var result = GenTemperature.GetTemperatureForCell(tempSource.Key, map);
+						foreach (var comp in tempSource.Value)
+                        {
+							result += comp.Props.tempOutcome;
+                        }
+						if (tempRange.Includes(result))
+						{
+							candidates.Add(tempSource.Key);
+						}
+					}
+					candidates = candidates.OrderBy(x => pawn.Position.DistanceTo(x)).ToList();
 					while (candidates.Any())
 					{
-						var candidate = candidates.First();
-						var cells = candidate.AffectedCells.OrderBy(x => candidate.position.DistanceTo(x)).ToList();
-						while (cells.Any())
-                        {
-							var list = cells.Take(10).InRandomOrder();
-							cells = cells.Skip(10).ToList();
-							foreach (var affectedCell in list)
+						var list = candidates.Take(10).InRandomOrder();
+						candidates = candidates.Skip(10).ToList();
+						foreach (var affectedCell in list)
+						{
+							if (pawn.CanReserveAndReach(affectedCell, PathEndMode.OnCell, Danger.Deadly))
 							{
-								if (pawn.CanReserveAndReach(affectedCell, PathEndMode.OnCell, Danger.Deadly))
-								{
-									Log.Message("Return job: " + pawn + " - " + affectedCell);
-									return JobMaker.MakeJob(JobDefOf.GotoSafeTemperature, affectedCell);
-								}
-
+								Log.Message("Return job: " + pawn + " - " + affectedCell);
+								return JobMaker.MakeJob(JobDefOf.GotoSafeTemperature, affectedCell);
 							}
 						}
-						candidates.Remove(candidate);
 					}
 				}
 				Log.Message("Return null - SeekSafeTemperature: " + pawn);

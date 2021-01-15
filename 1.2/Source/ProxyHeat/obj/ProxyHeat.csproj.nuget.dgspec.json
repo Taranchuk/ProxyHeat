@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "c:\\GAMES\\Rimworld\\Mods\\ProxyHeat\\1.2\\Source\\ProxyHeat\\ProxyHeat.csproj": {}
+    "C:\\GAMES\\Rimworld\\Mods\\ProxyHeat\\1.2\\Source\\ProxyHeat\\ProxyHeat.csproj": {}
   },
   "projects": {
-    "c:\\GAMES\\Rimworld\\Mods\\ProxyHeat\\1.2\\Source\\ProxyHeat\\ProxyHeat.csproj": {
+    "C:\\GAMES\\Rimworld\\Mods\\ProxyHeat\\1.2\\Source\\ProxyHeat\\ProxyHeat.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "c:\\GAMES\\Rimworld\\Mods\\ProxyHeat\\1.2\\Source\\ProxyHeat\\ProxyHeat.csproj",
+        "projectUniqueName": "C:\\GAMES\\Rimworld\\Mods\\ProxyHeat\\1.2\\Source\\ProxyHeat\\ProxyHeat.csproj",
         "projectName": "ProxyHeat",
-        "projectPath": "c:\\GAMES\\Rimworld\\Mods\\ProxyHeat\\1.2\\Source\\ProxyHeat\\ProxyHeat.csproj",
+        "projectPath": "C:\\GAMES\\Rimworld\\Mods\\ProxyHeat\\1.2\\Source\\ProxyHeat\\ProxyHeat.csproj",
         "packagesPath": "C:\\Users\\Vova\\.nuget\\packages\\",
-        "outputPath": "c:\\GAMES\\Rimworld\\Mods\\ProxyHeat\\1.2\\Source\\ProxyHeat\\obj\\",
+        "outputPath": "C:\\GAMES\\Rimworld\\Mods\\ProxyHeat\\1.2\\Source\\ProxyHeat\\obj\\",
         "projectStyle": "PackageReference",
         "skipContentFileWrite": true,
         "configFilePaths": [

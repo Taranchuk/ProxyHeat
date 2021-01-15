@@ -26,14 +26,15 @@ namespace ProxyHeat
 		public CompProperties_TemperatureSource Props => (CompProperties_TemperatureSource)props;
 		private bool active;
 		private Map map;
-		public bool Active => active;// && position.UsesOutdoorTemperature(map);
+
 		private CompPowerTrader powerComp;
 		private CompRefuelable fuelComp;
 		public IntVec3 position;
 		private HashSet<IntVec3> affectedCells = new HashSet<IntVec3>();
 		public HashSet<IntVec3> AffectedCells => affectedCells;
 		private List<IntVec3> affectedCellsList = new List<IntVec3>();
-		private bool dirty;
+
+		private ProxyHeatManager proxyHeatManager;
 		public override void PostSpawnSetup(bool respawningAfterLoad)
         {
             base.PostSpawnSetup(respawningAfterLoad);
@@ -47,17 +48,9 @@ namespace ProxyHeat
 			}
 			this.position = this.parent.Position;
 			this.map = this.parent.Map;
-			this.dirty = true;
-			if (HarmonyInit.compTemperatureSources.ContainsKey(map))
-            {
-				HarmonyInit.compTemperatureSources[map].Add(this);
-			}
-			else
-            {
-				HarmonyInit.compTemperatureSources[map] = new List<CompTemperatureSource> { this };
-			}
+			this.proxyHeatManager = this.map.GetComponent<ProxyHeatManager>();
+			this.MarkDirty();
 		}
-
         public override void PostPostMake()
         {
             base.PostPostMake();
@@ -65,13 +58,13 @@ namespace ProxyHeat
 
 		public void MarkDirty()
         {
-			this.dirty = true;
+			this.proxyHeatManager.MarkDirty(this);
         }
         public void RecalculateAffectedCells()
         {
-			Log.Message(this + " - RecalculateAffectedCells");
 			affectedCells.Clear();
 			affectedCellsList.Clear();
+			proxyHeatManager.RemoveComp(this);
 			Func<IntVec3, bool> validator = delegate (IntVec3 cell)
 			{
 				if (!cell.Walkable(map))
@@ -97,12 +90,22 @@ namespace ProxyHeat
 				}
 			}
 			affectedCellsList.AddRange(affectedCells.ToList());
-			this.dirty = false;
+			foreach (var cell in affectedCells)
+            {
+				if (proxyHeatManager.temperatureSources.ContainsKey(cell))
+                {
+					proxyHeatManager.temperatureSources[cell].Add(this);
+                }
+				else
+                {
+					proxyHeatManager.temperatureSources[cell] = new List<CompTemperatureSource> { this };
+				}
+			}
+			proxyHeatManager.compTemperatures.Add(this);
 		}
         public override void PostDrawExtraSelectionOverlays()
         {
             base.PostDrawExtraSelectionOverlays();
-			Log.Message(affectedCellsList.Count.ToString());
 			if (Props.tempOutcome >= 0)
             {
 				GenDraw.DrawFieldEdges(affectedCellsList, GenTemperature.ColorRoomHot);
@@ -115,21 +118,19 @@ namespace ProxyHeat
 		public override void PostDeSpawn(Map map)
         {
             base.PostDeSpawn(map);
-			if (HarmonyInit.compTemperatureSources.ContainsKey(map))
-			{
-				HarmonyInit.compTemperatureSources[map].Remove(this);
-			}
+			proxyHeatManager.RemoveComp(this);
 		}
 
 		public override void CompTick()
         {
             base.CompTick();
+			bool dirty = false;
 			if (!Props.dependsOnFuel && !Props.dependsOnPower)
             {
 				if (!this.active)
                 {
 					this.active = true;
-					this.dirty = true;
+					dirty = true;
 				}
             }
 			if (powerComp != null)
@@ -138,7 +139,7 @@ namespace ProxyHeat
 				else if (!this.active)
 				{
 					this.active = true;
-					this.dirty = true;
+					dirty = true;
 				}
 			}
 			if (fuelComp != null)
@@ -147,7 +148,7 @@ namespace ProxyHeat
 				else if (!this.active)
 				{
 					this.active = true;
-					this.dirty = true;
+					dirty = true;
 				}
             }
 			if (!this.active && this.affectedCells.Any())
@@ -155,24 +156,15 @@ namespace ProxyHeat
 				this.affectedCells.Clear();
 				this.affectedCellsList.Clear();
             }
-			else if (this.dirty)
+			else if (dirty)
 			{
-				RecalculateAffectedCells();
+				MarkDirty();
 			}
 		}
 
-		public bool IsNearby(IntVec3 nearByCell)
-        {
-			if (affectedCells.Contains(nearByCell))
-            {
-				return true;
-            }
-			return false;
-        }
-
-		public bool InRange(IntVec3 nearByCell)
+		public bool InRangeAndActive(IntVec3 nearByCell)
 		{
-			if (this.position.DistanceTo(nearByCell) <= Props.radius)
+			if (this.active && this.position.DistanceTo(nearByCell) <= Props.radius)
 			{
 				return true;
 			}
