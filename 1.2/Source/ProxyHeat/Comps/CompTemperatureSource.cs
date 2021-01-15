@@ -30,12 +30,23 @@ namespace ProxyHeat
 
 		private CompPowerTrader powerComp;
 		private CompRefuelable fuelComp;
+		private CompTempControl tempControlComp;
 		public IntVec3 position;
 		private HashSet<IntVec3> affectedCells = new HashSet<IntVec3>();
 		public HashSet<IntVec3> AffectedCells => affectedCells;
 		private List<IntVec3> affectedCellsList = new List<IntVec3>();
-
 		private ProxyHeatManager proxyHeatManager;
+		public float TemperatureOutcome
+        {
+			get
+            {
+				if (tempControlComp != null)
+                {
+					return tempControlComp.targetTemperature;
+				}
+				return this.Props.tempOutcome;
+            }
+        }
 		public override void PostSpawnSetup(bool respawningAfterLoad)
         {
             base.PostSpawnSetup(respawningAfterLoad);
@@ -47,6 +58,8 @@ namespace ProxyHeat
             {
 				fuelComp = this.parent.GetComp<CompRefuelable>();
 			}
+			tempControlComp = this.parent.GetComp<CompTempControl>();
+
 			this.position = this.parent.Position;
 			this.map = this.parent.Map;
 			this.proxyHeatManager = this.map.GetComponent<ProxyHeatManager>();
@@ -131,7 +144,7 @@ namespace ProxyHeat
         public override void PostDrawExtraSelectionOverlays()
         {
             base.PostDrawExtraSelectionOverlays();
-			if (Props.tempOutcome >= 0)
+			if (this.TemperatureOutcome >= 0)
             {
 				GenDraw.DrawFieldEdges(affectedCellsList, GenTemperature.ColorRoomHot);
             }

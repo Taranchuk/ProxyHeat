@@ -151,7 +151,7 @@ namespace ProxyHeat
 						foreach (var tempSourceCandidate in tempSources)
 						{
 							Log.Message(cell + " - " + tempSourceCandidate);
-							result += tempSourceCandidate.Props.tempOutcome;
+							result += tempSourceCandidate.TemperatureOutcome;
 						}
 					}
 				}
@@ -171,7 +171,7 @@ namespace ProxyHeat
 					{
 						foreach (var tempSourceCandidate in tempSources)
 						{
-							__result += tempSourceCandidate.Props.tempOutcome;
+							__result += tempSourceCandidate.TemperatureOutcome;
 						}
 					}
 				}
@@ -213,7 +213,7 @@ namespace ProxyHeat
 						var result = GenTemperature.GetTemperatureForCell(tempSource.Key, map);
 						foreach (var comp in tempSource.Value)
                         {
-							result += comp.Props.tempOutcome;
+							result += comp.TemperatureOutcome;
                         }
 						if (tempRange.Includes(result))
 						{
