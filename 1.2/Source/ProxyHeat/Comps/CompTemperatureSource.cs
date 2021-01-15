@@ -60,6 +60,7 @@ namespace ProxyHeat
 		public void MarkDirty()
         {
 			this.proxyHeatManager.MarkDirty(this);
+			Log.Message("Marking dirty");
         }
         public void RecalculateAffectedCells()
         {
@@ -67,53 +68,53 @@ namespace ProxyHeat
 			affectedCellsList.Clear();
 			proxyHeatManager.RemoveComp(this);
 
-
-			HashSet<IntVec3> tempCells = new HashSet<IntVec3>();
-			foreach (var cell in GetCells())
-			{
-				foreach (var intVec in GenRadial.RadialCellsAround(cell, Props.radius, true))
+			if (this.active)
+            {
+				HashSet<IntVec3> tempCells = new HashSet<IntVec3>();
+				foreach (var cell in GetCells())
 				{
-					tempCells.Add(intVec);
-				}
-			}
-
-			Predicate<IntVec3> validator = delegate (IntVec3 cell)
-			{
-				if (!tempCells.Contains(cell)) return false;
-				var edifice = cell.GetEdifice(map);
-				var result = edifice == null || edifice.def.passability != Traversability.Impassable || edifice == this.parent;
-				return result;
-			};
-
-			var offset = this.Props.tileOffset != IntVec3.Invalid ? this.parent.OccupiedRect().MovedBy(this.Props.tileOffset.RotatedBy(this.parent.Rotation)).CenterCell : position;
-			map.floodFiller.FloodFill(offset, validator, delegate (IntVec3 x)
-			{
-				if (tempCells.Contains(x))
-				{
-					var edifice = x.GetEdifice(map);
-					var result = edifice == null || edifice.def.passability != Traversability.Impassable || edifice == this.parent;
-					if (result && (GenSight.LineOfSight(offset, x, map) || offset.DistanceTo(x) <= 1.5f))
+					foreach (var intVec in GenRadial.RadialCellsAround(cell, Props.radius, true))
 					{
-						Log.Message("edifice: " + edifice + " - " + x.GetFirstBuilding(map));
-						affectedCells.Add(x);
+						tempCells.Add(intVec);
 					}
 				}
-			}, int.MaxValue, rememberParents: false, (IEnumerable<IntVec3>)null);
 
+				Predicate<IntVec3> validator = delegate (IntVec3 cell)
+				{
+					if (!tempCells.Contains(cell)) return false;
+					var edifice = cell.GetEdifice(map);
+					var result = edifice == null || edifice.def.passability != Traversability.Impassable || edifice == this.parent;
+					return result;
+				};
 
-			affectedCellsList.AddRange(affectedCells.ToList());
-			foreach (var cell in affectedCells)
-            {
-				if (proxyHeatManager.temperatureSources.ContainsKey(cell))
-                {
-					proxyHeatManager.temperatureSources[cell].Add(this);
-                }
-				else
-                {
-					proxyHeatManager.temperatureSources[cell] = new List<CompTemperatureSource> { this };
+				var offset = this.Props.tileOffset != IntVec3.Invalid ? this.parent.OccupiedRect().MovedBy(this.Props.tileOffset.RotatedBy(this.parent.Rotation)).CenterCell : position;
+				map.floodFiller.FloodFill(offset, validator, delegate (IntVec3 x)
+				{
+					if (tempCells.Contains(x))
+					{
+						var edifice = x.GetEdifice(map);
+						var result = edifice == null || edifice.def.passability != Traversability.Impassable || edifice == this.parent;
+						if (result && (GenSight.LineOfSight(offset, x, map) || offset.DistanceTo(x) <= 1.5f))
+						{
+							affectedCells.Add(x);
+						}
+					}
+				}, int.MaxValue, rememberParents: false, (IEnumerable<IntVec3>)null);
+				affectedCells.AddRange(this.parent.OccupiedRect());
+				affectedCellsList.AddRange(affectedCells.ToList());
+				foreach (var cell in affectedCells)
+				{
+					if (proxyHeatManager.temperatureSources.ContainsKey(cell))
+					{
+						proxyHeatManager.temperatureSources[cell].Add(this);
+					}
+					else
+					{
+						proxyHeatManager.temperatureSources[cell] = new List<CompTemperatureSource> { this };
+					}
 				}
+				proxyHeatManager.compTemperatures.Add(this);
 			}
-			proxyHeatManager.compTemperatures.Add(this);
 		}
 
 		public IEnumerable<IntVec3> GetCells()
@@ -142,6 +143,12 @@ namespace ProxyHeat
 		public override void PostDeSpawn(Map map)
         {
             base.PostDeSpawn(map);
+			proxyHeatManager.RemoveComp(this);
+		}
+
+        public override void PostDestroy(DestroyMode mode, Map previousMap)
+        {
+            base.PostDestroy(mode, previousMap);
 			proxyHeatManager.RemoveComp(this);
 		}
 
@@ -179,8 +186,9 @@ namespace ProxyHeat
             {
 				this.affectedCells.Clear();
 				this.affectedCellsList.Clear();
+				dirty = true;
             }
-			else if (dirty)
+			if (dirty)
 			{
 				MarkDirty();
 			}

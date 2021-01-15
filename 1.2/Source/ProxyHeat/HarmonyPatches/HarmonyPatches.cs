@@ -150,6 +150,7 @@ namespace ProxyHeat
 					{
 						foreach (var tempSourceCandidate in tempSources)
 						{
+							Log.Message(cell + " - " + tempSourceCandidate);
 							result += tempSourceCandidate.Props.tempOutcome;
 						}
 					}

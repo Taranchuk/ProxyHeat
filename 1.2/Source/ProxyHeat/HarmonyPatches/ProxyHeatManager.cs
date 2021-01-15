@@ -31,6 +31,7 @@ namespace ProxyHeat
         }
         public void RemoveComp(CompTemperatureSource comp)
         {
+            Log.Message("Removing: " + comp);
             if (compTemperatures.Contains(comp))
             {
                 compTemperatures.Remove(comp);
@@ -50,7 +51,11 @@ namespace ProxyHeat
             {
                 foreach (var comp in dirtyComps)
                 {
-                    comp.RecalculateAffectedCells();
+                    if (comp != null && comp.parent.Spawned)
+                    {
+                        comp.RecalculateAffectedCells();
+                        Log.Message(comp + " recalc");
+                    }
                 }
                 dirtyComps.Clear();
                 this.dirty = false;

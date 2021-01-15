@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "6wdgtNV8nNNbsuLsPTJLiQ9Gu3U/KoD7dA/82aCzF7PZfKM1q3DvNSOxkNF36S68zFCZkG//xxbeT6HMofaEcQ==",
+  "dgSpecHash": "7xZV+W2driA5k+iYrQUSv8ZurHQcSK3qBU2xq84w2S8oUmwQq4tSUaiI2nEjeZOl7qhwjjHlI0XtnGxhFpfnrg==",
   "success": true,
-  "projectFilePath": "c:\\GAMES\\Rimworld\\Mods\\ProxyHeat\\1.2\\Source\\ProxyHeat\\ProxyHeat.csproj",
+  "projectFilePath": "C:\\GAMES\\Rimworld\\Mods\\ProxyHeat\\1.2\\Source\\ProxyHeat\\ProxyHeat.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Vova\\.nuget\\packages\\krafs.rimworld.ref\\1.2.2753\\krafs.rimworld.ref.1.2.2753.nupkg.sha512",
     "C:\\Users\\Vova\\.nuget\\packages\\lib.harmony\\2.0.4\\lib.harmony.2.0.4.nupkg.sha512"
