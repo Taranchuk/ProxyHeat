@@ -89,6 +89,8 @@
 					<li Class="ProxyHeat.CompProperties_TemperatureSource">
 						<radius>2</radius>
 						<tempOutcome>21</tempOutcome>
+						<minTemperature>0</minTemperature>
+						<maxTemperature>40</maxTemperature>
 						<dependsOnPower>true</dependsOnPower>
 					</li>
 				</value>
@@ -120,6 +122,8 @@
 					<li Class="ProxyHeat.CompProperties_TemperatureSource">
 						<radius>2</radius>
 						<tempOutcome>-10</tempOutcome>
+						<maxTemperature>-1</maxTemperature>
+						<minTemperature>-40</minTemperature>
 						<dependsOnPower>true</dependsOnPower>
 						<tileOffset>(0, 0, -1)</tileOffset>
 					</li>

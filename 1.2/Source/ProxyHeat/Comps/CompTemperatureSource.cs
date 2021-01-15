@@ -13,8 +13,11 @@ namespace ProxyHeat
 	{
 		public float radius;
 		public float tempOutcome;
+		public float? minTemperature;
+		public float? maxTemperature;
 		public bool dependsOnPower;
 		public bool dependsOnFuel;
+		public bool flickable;
 		public IntVec3 tileOffset = IntVec3.Invalid;
 		public CompProperties_TemperatureSource()
 		{
@@ -30,6 +33,7 @@ namespace ProxyHeat
 
 		private CompPowerTrader powerComp;
 		private CompRefuelable fuelComp;
+		private CompFlickable compFlickable;
 		private CompTempControl tempControlComp;
 		public IntVec3 position;
 		private HashSet<IntVec3> affectedCells = new HashSet<IntVec3>();
@@ -42,7 +46,16 @@ namespace ProxyHeat
             {
 				if (tempControlComp != null)
                 {
-					return tempControlComp.targetTemperature;
+					var tempOutcome = tempControlComp.targetTemperature;
+					if (Props.maxTemperature.HasValue && tempOutcome > Props.maxTemperature.Value)
+                    {
+						tempOutcome = Props.maxTemperature.Value;
+					}
+					else if (Props.minTemperature.HasValue && tempOutcome < Props.minTemperature.Value)
+                    {
+						tempOutcome = Props.minTemperature.Value;
+					}
+					return tempOutcome;
 				}
 				return this.Props.tempOutcome;
             }
@@ -58,8 +71,15 @@ namespace ProxyHeat
             {
 				fuelComp = this.parent.GetComp<CompRefuelable>();
 			}
+			if (Props.flickable)
+            {
+				compFlickable = this.parent.GetComp<CompFlickable>();
+			}
+			if (!Props.dependsOnFuel && !Props.dependsOnPower)
+            {
+				active = true;
+            }
 			tempControlComp = this.parent.GetComp<CompTempControl>();
-
 			this.position = this.parent.Position;
 			this.map = this.parent.Map;
 			this.proxyHeatManager = this.map.GetComponent<ProxyHeatManager>();
@@ -73,7 +93,7 @@ namespace ProxyHeat
 		public void MarkDirty()
         {
 			this.proxyHeatManager.MarkDirty(this);
-			Log.Message("Marking dirty");
+			this.dirty = false;
         }
         public void RecalculateAffectedCells()
         {
@@ -165,42 +185,78 @@ namespace ProxyHeat
 			proxyHeatManager.RemoveComp(this);
 		}
 
+		public bool dirty = false;
+		private void SetActive(bool value)
+        {
+			this.active = value;
+			this.dirty = true;
+        }
+
 		public override void CompTick()
         {
             base.CompTick();
-			bool dirty = false;
-			if (!Props.dependsOnFuel && !Props.dependsOnPower)
+			if (compFlickable != null)
             {
-				if (!this.active)
+				if (!compFlickable.SwitchIsOn)
                 {
-					this.active = true;
-					dirty = true;
-				}
-            }
-			if (powerComp != null)
-            {
-				if (!powerComp.PowerOn) this.active = false;
-				else if (!this.active)
-				{
-					this.active = true;
-					dirty = true;
+					if (this.active)
+					{
+						SetActive(false);
+						RecalculateAffectedCells();
+						if (proxyHeatManager.compTemperatures.Contains(this))
+                        {
+							proxyHeatManager.RemoveComp(this);
+                        }
+					}
+					return;
 				}
 			}
-			if (fuelComp != null)
+
+			if (Props.dependsOnFuel && Props.dependsOnPower)
             {
-				if (!fuelComp.HasFuel) this.active = false;
-				else if (!this.active)
+				if (powerComp != null && powerComp.PowerOn && fuelComp != null && fuelComp.HasFuel)
+                {
+					if (!this.active)
+                    {
+						Log.Message("1");
+						this.SetActive(true);
+					}
+				}
+				else if (this.active)
+                {
+					Log.Message("2");
+					this.SetActive(false);
+                }
+            }
+
+			else if (powerComp != null)
+            {
+				if (!powerComp.PowerOn && this.active)
+                {
+					Log.Message("3");
+					this.SetActive(false);
+				}
+				else if (powerComp.PowerOn && !this.active)
 				{
-					this.active = true;
-					dirty = true;
+					Log.Message("4");
+					this.SetActive(true);
+				}
+			}
+
+			else if (fuelComp != null)
+            {
+				if (!fuelComp.HasFuel && this.active)
+                {
+					Log.Message("5");
+					this.SetActive(false);
+				}
+				else if (fuelComp.HasFuel && !this.active)
+				{
+					Log.Message("6");
+					this.SetActive(true);
 				}
             }
-			if (!this.active && this.affectedCells.Any())
-            {
-				this.affectedCells.Clear();
-				this.affectedCellsList.Clear();
-				dirty = true;
-            }
+
 			if (dirty)
 			{
 				MarkDirty();

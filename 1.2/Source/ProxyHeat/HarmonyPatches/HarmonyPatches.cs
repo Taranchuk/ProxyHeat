@@ -144,13 +144,13 @@ namespace ProxyHeat
 
 			private static float GetOutDoorTemperature(float result, Map map, IntVec3 cell)
             {
+				Log.Message("Outdoor: " + cell);
 				if (proxyHeatManagers.TryGetValue(map, out ProxyHeatManager proxyHeatManager))
 				{
 					if (proxyHeatManager.temperatureSources.TryGetValue(cell, out List<CompTemperatureSource> tempSources))
 					{
 						foreach (var tempSourceCandidate in tempSources)
 						{
-							Log.Message(cell + " - " + tempSourceCandidate);
 							result += tempSourceCandidate.TemperatureOutcome;
 						}
 					}
