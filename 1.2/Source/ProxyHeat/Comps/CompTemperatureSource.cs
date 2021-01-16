@@ -50,10 +50,10 @@ namespace ProxyHeat
         {
 			get
             {
-				if (tempControlComp != null)
-                {
-					return tempControlComp.targetTemperature;
-				}
+				//if (tempControlComp != null)
+                //{
+				//	return tempControlComp.targetTemperature;
+				//}
 				return this.Props.tempOutcome;
             }
         }
