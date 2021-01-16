@@ -51,9 +51,20 @@ namespace ProxyHeat
             {
                 foreach (var comp in dirtyComps)
                 {
-                    if (comp != null && comp.parent.Spawned)
+                    if (comp != null)
                     {
-                        comp.RecalculateAffectedCells();
+                        if (comp.parent.Spawned)
+                        {
+                            comp.RecalculateAffectedCells();
+                            if (!comp.AffectedCells.Any())
+                            {
+                                RemoveComp(comp);
+                            }
+                        }
+                        else
+                        {
+                            RemoveComp(comp);
+                        }
                     }
                 }
                 dirtyComps.Clear();
@@ -70,27 +81,40 @@ namespace ProxyHeat
         {
             if (temperatureSources.TryGetValue(cell, out List<CompTemperatureSource> tempSources))
             {
+                if (!cell.UsesOutdoorTemperature(map))
+                {
+                    foreach (var comp in tempSources)
+                    {
+                        this.MarkDirty(comp);
+                    }
+                    return result;
+                }
                 var tempResult = result;
                 foreach (var tempSourceCandidate in tempSources)
                 {
                     var props = tempSourceCandidate.Props;
-                    if (props.maxTemperature.HasValue && result >= props.maxTemperature.Value)
+                    var tempOutcome = tempSourceCandidate.TemperatureOutcome;
+                    if (tempOutcome != 0)
                     {
-                        continue;
+                        if (props.maxTemperature.HasValue && result >= props.maxTemperature.Value && tempOutcome > 0)
+                        {
+                            continue;
+                        }
+                        else if (props.minTemperature.HasValue && props.minTemperature.Value >= result && tempOutcome < 0)
+                        {
+                            continue;
+                        }
+                        tempResult += tempOutcome;
+                        if (props.maxTemperature.HasValue && result < props.maxTemperature.Value && tempResult > props.maxTemperature.Value && tempResult > result)
+                        {
+                            tempResult = props.maxTemperature.Value;
+                        }
+                        else if (props.minTemperature.HasValue && props.minTemperature.Value > tempResult && result > tempResult)
+                        {
+                            tempResult = props.minTemperature.Value;
+                        }
                     }
-                    else if (props.minTemperature.HasValue && props.minTemperature.Value >= result)
-                    {
-                        continue;
-                    }
-                    tempResult += tempSourceCandidate.TemperatureOutcome;
-                    if (props.maxTemperature.HasValue && result < props.maxTemperature.Value && tempResult > props.maxTemperature.Value && tempResult > result)
-                    {
-                        tempResult = props.maxTemperature.Value;
-                    }
-                    else if (props.minTemperature.HasValue && props.minTemperature.Value > tempResult && result > tempResult)
-                    {
-                        tempResult = props.minTemperature.Value;
-                    }
+
                 }
                 result = tempResult;
             }

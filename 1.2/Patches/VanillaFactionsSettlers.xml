@@ -26,7 +26,6 @@
 							<tempOutcome>30</tempOutcome>
 							<dependsOnFuel>true</dependsOnFuel>
 							<flickable>true</flickable>
-							<needsTick>true</needsTick>
 						</li>
 					</value>
 				</li>

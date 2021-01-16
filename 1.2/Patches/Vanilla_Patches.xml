@@ -21,7 +21,6 @@
 						<tempOutcome>18</tempOutcome>
 						<dependsOnFuel>true</dependsOnFuel>
 						<maxTemperature>30</maxTemperature>
-						<needsTick>true</needsTick>
 					</li>
 				</value>
 			</li>
@@ -43,7 +42,6 @@
 						<radius>1.5</radius>
 						<tempOutcome>-6</tempOutcome>
 						<dependsOnFuel>true</dependsOnFuel>
-						<needsTick>true</needsTick>
 					</li>
 				</value>
 			</li>
@@ -89,7 +87,6 @@
 						<minTemperature>0</minTemperature>
 						<maxTemperature>40</maxTemperature>
 						<dependsOnPower>true</dependsOnPower>
-						<needsTick>true</needsTick>
 					</li>
 				</value>
 			</li>
@@ -117,7 +114,6 @@
 						<minTemperature>-40</minTemperature>
 						<dependsOnPower>true</dependsOnPower>
 						<tileOffset>(0, 0, -1)</tileOffset>
-						<needsTick>true</needsTick>
 					</li>
 				</value>
 			</li>

@@ -18,7 +18,6 @@ namespace ProxyHeat
 		public bool dependsOnPower;
 		public bool dependsOnFuel;
 		public bool flickable;
-		public bool needsTick;
 		public IntVec3 tileOffset = IntVec3.Invalid;
 		public CompProperties_TemperatureSource()
 		{
@@ -76,10 +75,13 @@ namespace ProxyHeat
 			this.position = this.parent.Position;
 			this.map = this.parent.Map;
 			this.proxyHeatManager = this.map.GetComponent<ProxyHeatManager>();
-			if (this.Props.needsTick)
-            {
+			Log.Message(this.parent.def + " - is spawned as a temp source");
+			if (Props.dependsOnPower || Props.dependsOnFuel || Props.flickable)
+			{
+				Log.Message("Adding " + this + " to compTemperaturesToTick");
 				this.proxyHeatManager.compTemperaturesToTick.Add(this);
-            }
+			}
+
 			this.MarkDirty();
 		}
 
@@ -87,7 +89,7 @@ namespace ProxyHeat
 		{
 			base.PostDeSpawn(map);
 			proxyHeatManager.RemoveComp(this);
-			if (this.Props.needsTick)
+			if (proxyHeatManager.compTemperaturesToTick.Contains(this))
             {
 				proxyHeatManager.compTemperaturesToTick.Remove(this);
 			}
@@ -135,7 +137,7 @@ namespace ProxyHeat
 						}
 					}
 				}, int.MaxValue, rememberParents: false, (IEnumerable<IntVec3>)null);
-				affectedCells.AddRange(this.parent.OccupiedRect());
+				affectedCells.AddRange(this.parent.OccupiedRect().Where(x => x.UsesOutdoorTemperature(map)));
 				affectedCellsList.AddRange(affectedCells.ToList());
 				foreach (var cell in affectedCells)
 				{
@@ -156,11 +158,11 @@ namespace ProxyHeat
         {
 			if (this.Props.tileOffset != IntVec3.Invalid)
 			{
-				return this.parent.OccupiedRect().MovedBy(this.Props.tileOffset.RotatedBy(this.parent.Rotation)).Cells;
+				return this.parent.OccupiedRect().MovedBy(this.Props.tileOffset.RotatedBy(this.parent.Rotation)).Cells.Where(x => x.UsesOutdoorTemperature(map));
 			}
 			else
 			{
-				return this.parent.OccupiedRect().Cells;
+				return this.parent.OccupiedRect().Cells.Where(x => x.UsesOutdoorTemperature(map));
 			}
 		}
         public override void PostDrawExtraSelectionOverlays()

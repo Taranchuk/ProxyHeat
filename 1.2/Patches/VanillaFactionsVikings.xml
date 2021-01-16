@@ -25,7 +25,6 @@
 							<radius>2.5</radius>
 							<tempOutcome>24</tempOutcome>
 							<dependsOnFuel>true</dependsOnFuel>
-							<needsTick>true</needsTick>
 						</li>
 					</value>
 				</li>
@@ -47,7 +46,6 @@
 							<radius>2.5</radius>
 							<tempOutcome>16</tempOutcome>
 							<dependsOnFuel>true</dependsOnFuel>
-							<needsTick>true</needsTick>
 						</li>
 					</value>
 				</li>

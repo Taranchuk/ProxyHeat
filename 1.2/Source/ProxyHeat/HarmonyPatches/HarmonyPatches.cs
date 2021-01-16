@@ -129,14 +129,18 @@ namespace ProxyHeat
 				if (room == null || c.Fogged(map))
                 {
 					num = GetOutDoorTemperature(Find.CurrentMap.mapTemperature.OutdoorTemp, map, c);
+					text += "Test 1";
+
 				}
 				else if (room.UsesOutdoorTemperature)
 				{
 					num = GetOutDoorTemperature(room.Temperature, map, c);
+					text += "Test 2";
 				}
 				else
                 {
 					num = room.Temperature;
+					text += "Vanilla";
 				}
 				__result = text + " " + num.ToStringTemperature("F0");
 				return false;
