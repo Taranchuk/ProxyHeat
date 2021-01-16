@@ -19,6 +19,7 @@ namespace ProxyHeat
 
         public Dictionary<IntVec3, List<CompTemperatureSource>> temperatureSources = new Dictionary<IntVec3, List<CompTemperatureSource>>();
         public List<CompTemperatureSource> compTemperatures = new List<CompTemperatureSource>();
+        public List<CompTemperatureSource> compTemperaturesToTick = new List<CompTemperatureSource>();
         private List<CompTemperatureSource> dirtyComps = new List<CompTemperatureSource>();
         public ProxyHeatManager(Map map) : base(map)
 		{
@@ -58,6 +59,42 @@ namespace ProxyHeat
                 dirtyComps.Clear();
                 this.dirty = false;
             }
+
+            foreach (var comp in compTemperaturesToTick)
+            {
+                comp.TempTick();
+            }
+        }
+
+        public float GetTemperatureOutcomeFor(IntVec3 cell, float result)
+        {
+            if (temperatureSources.TryGetValue(cell, out List<CompTemperatureSource> tempSources))
+            {
+                var tempResult = result;
+                foreach (var tempSourceCandidate in tempSources)
+                {
+                    var props = tempSourceCandidate.Props;
+                    if (props.maxTemperature.HasValue && result >= props.maxTemperature.Value)
+                    {
+                        continue;
+                    }
+                    else if (props.minTemperature.HasValue && props.minTemperature.Value >= result)
+                    {
+                        continue;
+                    }
+                    tempResult += tempSourceCandidate.TemperatureOutcome;
+                    if (props.maxTemperature.HasValue && result < props.maxTemperature.Value && tempResult > props.maxTemperature.Value && tempResult > result)
+                    {
+                        tempResult = props.maxTemperature.Value;
+                    }
+                    else if (props.minTemperature.HasValue && props.minTemperature.Value > tempResult && result > tempResult)
+                    {
+                        tempResult = props.minTemperature.Value;
+                    }
+                }
+                result = tempResult;
+            }
+            return result;
         }
     }
 }

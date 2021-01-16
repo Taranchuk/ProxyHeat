@@ -20,10 +20,10 @@
 						<radius>1.5</radius>
 						<tempOutcome>6</tempOutcome>
 						<dependsOnFuel>true</dependsOnFuel>
+						<needsTick>true</needsTick>
 					</li>
 				</value>
 			</li>
-
 		</operations>
 	</Operation>
 </Patch>

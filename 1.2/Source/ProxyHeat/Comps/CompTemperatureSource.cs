@@ -18,6 +18,7 @@ namespace ProxyHeat
 		public bool dependsOnPower;
 		public bool dependsOnFuel;
 		public bool flickable;
+		public bool needsTick;
 		public IntVec3 tileOffset = IntVec3.Invalid;
 		public CompProperties_TemperatureSource()
 		{
@@ -30,7 +31,7 @@ namespace ProxyHeat
 		public CompProperties_TemperatureSource Props => (CompProperties_TemperatureSource)props;
 		private bool active;
 		private Map map;
-
+		
 		private CompPowerTrader powerComp;
 		private CompRefuelable fuelComp;
 		private CompFlickable compFlickable;
@@ -46,16 +47,7 @@ namespace ProxyHeat
             {
 				if (tempControlComp != null)
                 {
-					var tempOutcome = tempControlComp.targetTemperature;
-					if (Props.maxTemperature.HasValue && tempOutcome > Props.maxTemperature.Value)
-                    {
-						tempOutcome = Props.maxTemperature.Value;
-					}
-					else if (Props.minTemperature.HasValue && tempOutcome < Props.minTemperature.Value)
-                    {
-						tempOutcome = Props.minTemperature.Value;
-					}
-					return tempOutcome;
+					return tempControlComp.targetTemperature;
 				}
 				return this.Props.tempOutcome;
             }
@@ -79,17 +71,27 @@ namespace ProxyHeat
             {
 				active = true;
             }
+
 			tempControlComp = this.parent.GetComp<CompTempControl>();
 			this.position = this.parent.Position;
 			this.map = this.parent.Map;
 			this.proxyHeatManager = this.map.GetComponent<ProxyHeatManager>();
+			if (this.Props.needsTick)
+            {
+				this.proxyHeatManager.compTemperaturesToTick.Add(this);
+            }
 			this.MarkDirty();
 		}
-        public override void PostPostMake()
-        {
-            base.PostPostMake();
-        }
 
+		public override void PostDeSpawn(Map map)
+		{
+			base.PostDeSpawn(map);
+			proxyHeatManager.RemoveComp(this);
+			if (this.Props.needsTick)
+            {
+				proxyHeatManager.compTemperaturesToTick.Remove(this);
+			}
+		}
 		public void MarkDirty()
         {
 			this.proxyHeatManager.MarkDirty(this);
@@ -100,7 +102,7 @@ namespace ProxyHeat
 			affectedCells.Clear();
 			affectedCellsList.Clear();
 			proxyHeatManager.RemoveComp(this);
-
+		
 			if (this.active)
             {
 				HashSet<IntVec3> tempCells = new HashSet<IntVec3>();
@@ -111,7 +113,7 @@ namespace ProxyHeat
 						tempCells.Add(intVec);
 					}
 				}
-
+		
 				Predicate<IntVec3> validator = delegate (IntVec3 cell)
 				{
 					if (!tempCells.Contains(cell)) return false;
@@ -119,7 +121,7 @@ namespace ProxyHeat
 					var result = edifice == null || edifice.def.passability != Traversability.Impassable || edifice == this.parent;
 					return result;
 				};
-
+		
 				var offset = this.Props.tileOffset != IntVec3.Invalid ? this.parent.OccupiedRect().MovedBy(this.Props.tileOffset.RotatedBy(this.parent.Rotation)).CenterCell : position;
 				map.floodFiller.FloodFill(offset, validator, delegate (IntVec3 x)
 				{
@@ -149,7 +151,7 @@ namespace ProxyHeat
 				proxyHeatManager.compTemperatures.Add(this);
 			}
 		}
-
+		
 		public IEnumerable<IntVec3> GetCells()
         {
 			if (this.Props.tileOffset != IntVec3.Invalid)
@@ -173,18 +175,13 @@ namespace ProxyHeat
 				GenDraw.DrawFieldEdges(affectedCellsList, GenTemperature.ColorRoomCold);
 			}
 		}
-		public override void PostDeSpawn(Map map)
-        {
-            base.PostDeSpawn(map);
-			proxyHeatManager.RemoveComp(this);
-		}
-
+		
         public override void PostDestroy(DestroyMode mode, Map previousMap)
         {
             base.PostDestroy(mode, previousMap);
 			proxyHeatManager.RemoveComp(this);
 		}
-
+		
 		public bool dirty = false;
 		private void SetActive(bool value)
         {
@@ -192,9 +189,8 @@ namespace ProxyHeat
 			this.dirty = true;
         }
 
-		public override void CompTick()
+		public void TempTick()
         {
-            base.CompTick();
 			if (compFlickable != null)
             {
 				if (!compFlickable.SwitchIsOn)
@@ -211,7 +207,7 @@ namespace ProxyHeat
 					return;
 				}
 			}
-
+		
 			if (Props.dependsOnFuel && Props.dependsOnPower)
             {
 				if (powerComp != null && powerComp.PowerOn && fuelComp != null && fuelComp.HasFuel)
@@ -228,7 +224,7 @@ namespace ProxyHeat
 					this.SetActive(false);
                 }
             }
-
+		
 			else if (powerComp != null)
             {
 				if (!powerComp.PowerOn && this.active)
@@ -242,7 +238,7 @@ namespace ProxyHeat
 					this.SetActive(true);
 				}
 			}
-
+		
 			else if (fuelComp != null)
             {
 				if (!fuelComp.HasFuel && this.active)
@@ -256,7 +252,7 @@ namespace ProxyHeat
 					this.SetActive(true);
 				}
             }
-
+		
 			if (dirty)
 			{
 				MarkDirty();
