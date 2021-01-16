@@ -20,6 +20,12 @@ namespace ProxyHeat
 		static HarmonyInit()
 		{
 			Harmony harmony = new Harmony("LongerCFloor.ProxyHeat");
+			CompTemperatureSource.gasCompType = AccessTools.TypeByName("GasNetwork.CompGasTrader");
+			if (CompTemperatureSource.gasCompType != null)
+            {
+				CompTemperatureSource.methodInfoGasOn = AccessTools.PropertyGetter(CompTemperatureSource.gasCompType, "GasOn");
+            }
+			Log.Message(CompTemperatureSource.gasCompType + " - " + CompTemperatureSource.methodInfoGasOn);
 			harmony.PatchAll();
 		}
 		
@@ -129,18 +135,14 @@ namespace ProxyHeat
 				if (room == null || c.Fogged(map))
                 {
 					num = GetOutDoorTemperature(Find.CurrentMap.mapTemperature.OutdoorTemp, map, c);
-					text += "Test 1";
-
 				}
 				else if (room.UsesOutdoorTemperature)
 				{
 					num = GetOutDoorTemperature(room.Temperature, map, c);
-					text += "Test 2";
 				}
 				else
                 {
 					num = room.Temperature;
-					text += "Vanilla";
 				}
 				__result = text + " " + num.ToStringTemperature("F0");
 				return false;

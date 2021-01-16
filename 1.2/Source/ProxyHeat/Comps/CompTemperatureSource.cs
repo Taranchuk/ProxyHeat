@@ -1,7 +1,9 @@
-﻿using RimWorld;
+﻿using HarmonyLib;
+using RimWorld;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -17,6 +19,7 @@ namespace ProxyHeat
 		public float? maxTemperature;
 		public bool dependsOnPower;
 		public bool dependsOnFuel;
+		public bool dependsOnGas;
 		public bool flickable;
 		public IntVec3 tileOffset = IntVec3.Invalid;
 		public CompProperties_TemperatureSource()
@@ -30,11 +33,14 @@ namespace ProxyHeat
 		public CompProperties_TemperatureSource Props => (CompProperties_TemperatureSource)props;
 		private bool active;
 		private Map map;
-		
+
 		private CompPowerTrader powerComp;
+		private ThingComp gasComp;
 		private CompRefuelable fuelComp;
 		private CompFlickable compFlickable;
 		private CompTempControl tempControlComp;
+		public static MethodInfo methodInfoGasOn;
+		public static Type gasCompType;
 		public IntVec3 position;
 		private HashSet<IntVec3> affectedCells = new HashSet<IntVec3>();
 		public HashSet<IntVec3> AffectedCells => affectedCells;
@@ -53,7 +59,7 @@ namespace ProxyHeat
         }
 		public override void PostSpawnSetup(bool respawningAfterLoad)
         {
-            base.PostSpawnSetup(respawningAfterLoad);
+			base.PostSpawnSetup(respawningAfterLoad);
 			if (Props.dependsOnPower)
             {
 				powerComp = this.parent.GetComp<CompPowerTrader>();
@@ -61,6 +67,11 @@ namespace ProxyHeat
 			if (Props.dependsOnFuel)
             {
 				fuelComp = this.parent.GetComp<CompRefuelable>();
+			}
+			if (Props.dependsOnGas)
+			{
+				gasComp = GetGasComp();
+				Log.Message(gasComp + " - " + methodInfoGasOn + " - " + gasCompType);
 			}
 			if (Props.flickable)
             {
@@ -76,7 +87,7 @@ namespace ProxyHeat
 			this.map = this.parent.Map;
 			this.proxyHeatManager = this.map.GetComponent<ProxyHeatManager>();
 			Log.Message(this.parent.def + " - is spawned as a temp source");
-			if (Props.dependsOnPower || Props.dependsOnFuel || Props.flickable)
+			if (Props.dependsOnPower || Props.dependsOnFuel || Props.dependsOnGas || Props.flickable)
 			{
 				Log.Message("Adding " + this + " to compTemperaturesToTick");
 				this.proxyHeatManager.compTemperaturesToTick.Add(this);
@@ -85,6 +96,17 @@ namespace ProxyHeat
 			this.MarkDirty();
 		}
 
+		private ThingComp GetGasComp()
+        {
+			foreach (var comp in this.parent.AllComps)
+			{
+				if (comp.GetType() == gasCompType)
+				{
+					return comp;
+				}
+			}
+			return null;
+		}
 		public override void PostDeSpawn(Map map)
 		{
 			base.PostDeSpawn(map);
@@ -193,6 +215,10 @@ namespace ProxyHeat
 
 		public void TempTick()
         {
+			if (this.parent.def.defName.ToLower().Contains("gas"))
+			{
+				Log.Message(this.compFlickable + " - " + this.powerComp + " - " + this.tempControlComp + " - " + this.fuelComp);
+			}
 			if (compFlickable != null)
             {
 				if (!compFlickable.SwitchIsOn)
@@ -254,7 +280,20 @@ namespace ProxyHeat
 					this.SetActive(true);
 				}
             }
-		
+			else if (gasComp != null)
+            {
+				if (!(bool)methodInfoGasOn.Invoke(gasComp, null) && this.active)
+                {
+					Log.Message("7");
+					this.SetActive(false);
+				}
+				else if ((bool)methodInfoGasOn.Invoke(gasComp, null) && !this.active)
+                {
+					Log.Message("8");
+					this.SetActive(true);
+				}
+
+			}
 			if (dirty)
 			{
 				MarkDirty();
