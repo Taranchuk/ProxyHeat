@@ -59,7 +59,7 @@ namespace ProxyHeat
 			for (int i = 0; i < list.Count; i++)
 			{
 				var instruction = list[i];
-				if (i == 173)
+				if (i == 177)
                 {
 					found = true;
 				}
@@ -84,7 +84,7 @@ namespace ProxyHeat
 			for (int i = 0; i < list.Count; i++)
 			{
 				var instruction = list[i];
-				if (i == 175)
+				if (i == 179)
 				{
 					found = true;
 				}
@@ -203,7 +203,7 @@ namespace ProxyHeat
 			{
 				IntVec3 intVec = UI.MouseCell();
 				IntVec3 c = intVec;
-				Room room = intVec.GetRoom(Find.CurrentMap, RegionType.Set_All);
+				Room room = intVec.GetRoom(Find.CurrentMap);
 				if (room == null)
 				{
 					for (int i = 0; i < 9; i++)
@@ -211,7 +211,7 @@ namespace ProxyHeat
 						IntVec3 intVec2 = intVec + GenAdj.AdjacentCellsAndInside[i];
 						if (intVec2.InBounds(Find.CurrentMap))
 						{
-							Room room2 = intVec2.GetRoom(Find.CurrentMap, RegionType.Set_All);
+							Room room2 = intVec2.GetRoom(Find.CurrentMap);
 							if (room2 != null && ((!room2.PsychologicallyOutdoors && !room2.UsesOutdoorTemperature) || (!room2.PsychologicallyOutdoors && (room == null || room.PsychologicallyOutdoors)) || (room2.PsychologicallyOutdoors && room == null)))
 							{
 								c = intVec2;
@@ -227,7 +227,7 @@ namespace ProxyHeat
 					{
 						foreach (IntVec3 item in edifice.OccupiedRect().ExpandedBy(1).ClipInsideMap(Find.CurrentMap))
 						{
-							room = item.GetRoom(Find.CurrentMap, RegionType.Set_All);
+							room = item.GetRoom(Find.CurrentMap);
 							if (room != null && !room.PsychologicallyOutdoors)
 							{
 								c = item;
@@ -373,9 +373,22 @@ namespace ProxyHeat
 					candidates = candidates.OrderBy(x => pawn.Position.DistanceTo(x)).ToList();
 					foreach (var cell in candidates)
                     {
+						if (cell.GetFirstPawn(map) is null && pawn.Map.pawnDestinationReservationManager.FirstReserverOf(cell, pawn.Faction) is null 
+							&& pawn.CanReserveAndReach(cell, PathEndMode.OnCell, Danger.Deadly))
+						{
+							var job = JobMaker.MakeJob(def, cell);
+							pawn.Reserve(cell, job);
+							return job;
+						}
+					}
+
+					foreach (var cell in candidates)
+					{
 						if (pawn.CanReserveAndReach(cell, PathEndMode.OnCell, Danger.Deadly))
 						{
-							return JobMaker.MakeJob(def, cell);
+							var job = JobMaker.MakeJob(def, cell);
+							pawn.Reserve(cell, job);
+							return job;
 						}
 					}
 				}
