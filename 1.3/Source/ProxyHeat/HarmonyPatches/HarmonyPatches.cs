@@ -142,11 +142,24 @@ namespace ProxyHeat
 						}
 					}
 					candidates = candidates.OrderBy(x => pawnToLookUp.Position.DistanceTo(x)).ToList();
+
+					foreach (var cell in candidates)
+					{
+						if (cell.GetFirstPawn(map) is null && pawnToLookUp.Map.pawnDestinationReservationManager.FirstReserverOf(cell, pawnToLookUp.Faction) is null
+							&& pawnToLookUp.CanReserveAndReach(cell, PathEndMode.OnCell, Danger.Deadly))
+						{
+							__result = JobMaker.MakeJob(def, cell);
+							pawnToLookUp.Reserve(cell, __result);
+							return false;
+						}
+					}
+
 					foreach (var cell in candidates)
 					{
 						if (pawnToLookUp.CanReserveAndReach(cell, PathEndMode.OnCell, Danger.Deadly))
 						{
 							__result = JobMaker.MakeJob(def, cell);
+							pawnToLookUp.Reserve(cell, __result);
 							return false;
 						}
 					}

@@ -124,7 +124,7 @@ namespace ProxyHeat
 		public static bool GenNewRRJobPrefix(ref Job __result, JobDef def, Region reg)
 		{
 			if (pawnToLookUp != null)
-            {
+			{
 				var map = reg.Map;
 				var tempRange = pawnToLookUp.ComfortableTemperatureRange();
 				if (reg.Room.UsesOutdoorTemperature && proxyHeatManagers.TryGetValue(map, out ProxyHeatManager proxyHeatManager))
@@ -133,7 +133,7 @@ namespace ProxyHeat
 					foreach (var tempSource in proxyHeatManager.temperatureSources)
 					{
 						if (reg.Room.ContainsCell(tempSource.Key))
-                        {
+						{
 							var result = proxyHeatManager.GetTemperatureOutcomeFor(tempSource.Key, GenTemperature.GetTemperatureForCell(tempSource.Key, map));
 							if (tempRange.Includes(result))
 							{
@@ -142,11 +142,24 @@ namespace ProxyHeat
 						}
 					}
 					candidates = candidates.OrderBy(x => pawnToLookUp.Position.DistanceTo(x)).ToList();
+
+					foreach (var cell in candidates)
+					{
+						if (cell.GetFirstPawn(map) is null && pawnToLookUp.Map.pawnDestinationReservationManager.FirstReserverOf(cell, pawnToLookUp.Faction) is null
+							&& pawnToLookUp.CanReserveAndReach(cell, PathEndMode.OnCell, Danger.Deadly))
+						{
+							__result = JobMaker.MakeJob(def, cell);
+							pawnToLookUp.Reserve(cell, __result);
+							return false;
+						}
+					}
+
 					foreach (var cell in candidates)
 					{
 						if (pawnToLookUp.CanReserveAndReach(cell, PathEndMode.OnCell, Danger.Deadly))
 						{
 							__result = JobMaker.MakeJob(def, cell);
+							pawnToLookUp.Reserve(cell, __result);
 							return false;
 						}
 					}
@@ -154,7 +167,6 @@ namespace ProxyHeat
 			}
 			return true;
 		}
-
 
 		[HarmonyPatch(typeof(Building), nameof(Building.SpawnSetup))]
 		public static class Patch_SpawnSetup
@@ -355,7 +367,7 @@ namespace ProxyHeat
 				}
 				return true;
 			}
-		
+
 			public static Job SeekSafeTemperature(JobDef def, Pawn pawn, FloatRange tempRange)
 			{
 				var map = pawn.Map;
@@ -363,7 +375,7 @@ namespace ProxyHeat
 				{
 					var candidates = new List<IntVec3>();
 					foreach (var tempSource in proxyHeatManager.temperatureSources)
-                    {
+					{
 						var result = proxyHeatManager.GetTemperatureOutcomeFor(tempSource.Key, GenTemperature.GetTemperatureForCell(tempSource.Key, map));
 						if (tempRange.Includes(result))
 						{
@@ -372,10 +384,23 @@ namespace ProxyHeat
 					}
 					candidates = candidates.OrderBy(x => pawn.Position.DistanceTo(x)).ToList();
 					foreach (var cell in candidates)
-                    {
+					{
+						if (cell.GetFirstPawn(map) is null && pawn.Map.pawnDestinationReservationManager.FirstReserverOf(cell, pawn.Faction) is null
+							&& pawn.CanReserveAndReach(cell, PathEndMode.OnCell, Danger.Deadly))
+						{
+							var job = JobMaker.MakeJob(def, cell);
+							pawn.Reserve(cell, job);
+							return job;
+						}
+					}
+
+					foreach (var cell in candidates)
+					{
 						if (pawn.CanReserveAndReach(cell, PathEndMode.OnCell, Danger.Deadly))
 						{
-							return JobMaker.MakeJob(def, cell);
+							var job = JobMaker.MakeJob(def, cell);
+							pawn.Reserve(cell, job);
+							return job;
 						}
 					}
 				}
