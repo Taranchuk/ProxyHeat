@@ -114,7 +114,6 @@ namespace ProxyHeat
                             tempResult = props.minTemperature.Value;
                         }
                     }
-
                 }
                 result = tempResult;
             }

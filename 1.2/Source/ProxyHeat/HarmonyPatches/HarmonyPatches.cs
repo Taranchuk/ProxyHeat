@@ -272,16 +272,12 @@ namespace ProxyHeat
 				var map = Find.CurrentMap;
 				float num = 0f;
 				if (room == null || c.Fogged(map))
-                {
+				{
 					num = GetOutDoorTemperature(Find.CurrentMap.mapTemperature.OutdoorTemp, map, c);
 				}
-				else if (room.UsesOutdoorTemperature)
+				else
 				{
 					num = GetOutDoorTemperature(room.Temperature, map, c);
-				}
-				else
-                {
-					num = room.Temperature;
 				}
 				__result = text + " " + num.ToStringTemperature("F0");
 				return false;
@@ -317,13 +313,42 @@ namespace ProxyHeat
 			private static void Prefix(Plant __instance)
 			{
 				if (ProxyHeatMod.settings.allowPlantGrowthInsideProxyHeatEffectRadius)
-                {
+				{
 					checkForPlantGrowth = true;
 				}
 			}
-			private static void Postfix(Plant __instance)
+			private static void Postfix(Plant __instance, float __result)
 			{
 				checkForPlantGrowth = false;
+			}
+		}
+
+		[HarmonyPatch(typeof(PlantUtility), nameof(PlantUtility.GrowthSeasonNow))]
+		public static class Patch_GrowthSeasonNow
+		{
+			private static bool Prefix(ref bool __result, IntVec3 c, Map map, bool forSowing = false)
+			{
+				if (ProxyHeatMod.settings.allowPlantGrowthInsideProxyHeatEffectRadius)
+                {
+					if (proxyHeatManagers.TryGetValue(map, out ProxyHeatManager proxyHeatManager))
+					{
+						var tempResult = proxyHeatManager.GetTemperatureOutcomeFor(c, 0f);
+						if (tempResult != 0)
+                        {
+							float temperature = c.GetTemperature(map) + tempResult;
+							if (temperature > 0f)
+							{
+								__result = temperature < 58f;
+							}
+							else
+                            {
+								__result = false;
+                            }
+							return false;
+						}
+					}
+				}
+				return true;
 			}
 		}
 

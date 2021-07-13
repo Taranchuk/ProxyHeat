@@ -37,7 +37,6 @@ namespace ProxyHeat
 		public CompProperties_TemperatureSource Props => (CompProperties_TemperatureSource)props;
 		private bool active;
 		private Map map;
-
 		private CompPowerTrader powerComp;
 		private ThingComp gasComp;
 		private CompRefuelable fuelComp;
@@ -122,6 +121,11 @@ namespace ProxyHeat
 			this.proxyHeatManager.MarkDirty(this);
 			this.dirty = false;
         }
+
+		public bool CanWorkIn(IntVec3 cell)
+        {
+			return cell.UsesOutdoorTemperature(map) || ProxyHeatMod.settings.enableProxyHeatEffectIndoors;
+		}
         public void RecalculateAffectedCells()
         {
 			affectedCells.Clear();
@@ -160,7 +164,7 @@ namespace ProxyHeat
 						}
 					}
 				}, int.MaxValue, rememberParents: false, (IEnumerable<IntVec3>)null);
-				affectedCells.AddRange(this.parent.OccupiedRect().Where(x => x.UsesOutdoorTemperature(map)));
+				affectedCells.AddRange(this.parent.OccupiedRect().Where(x => CanWorkIn(x)));
 				affectedCellsList.AddRange(affectedCells.ToList());
 				foreach (var cell in affectedCells)
 				{
@@ -177,15 +181,16 @@ namespace ProxyHeat
 			}
 		}
 		
+
 		public IEnumerable<IntVec3> GetCells()
         {
 			if (this.Props.tileOffset != IntVec3.Invalid)
 			{
-				return this.parent.OccupiedRect().MovedBy(this.Props.tileOffset.RotatedBy(this.parent.Rotation)).Cells.Where(x => x.UsesOutdoorTemperature(map));
+				return this.parent.OccupiedRect().MovedBy(this.Props.tileOffset.RotatedBy(this.parent.Rotation)).Cells.Where(x => CanWorkIn(x));
 			}
 			else
 			{
-				return this.parent.OccupiedRect().Cells.Where(x => x.UsesOutdoorTemperature(map));
+				return this.parent.OccupiedRect().Cells.Where(x => CanWorkIn(x));
 			}
 		}
         public override void PostDrawExtraSelectionOverlays()

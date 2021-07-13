@@ -22,22 +22,22 @@ namespace ProxyHeat
 			Harmony harmony = new Harmony("LongerCFloor.ProxyHeat");
 			CompTemperatureSource.gasCompType = AccessTools.TypeByName("GasNetwork.CompGasTrader");
 			if (CompTemperatureSource.gasCompType != null)
-            {
+			{
 				CompTemperatureSource.methodInfoGasOn = AccessTools.PropertyGetter(CompTemperatureSource.gasCompType, "GasOn");
-            }
+			}
 			harmony.PatchAll();
 			if (ModLister.HasActiveModWithName("Brrr and Phew (Continued)"))
-            {
+			{
 				var prefix = AccessTools.Method(typeof(HarmonyPatches), nameof(HarmonyPatches.TryGiveJobPrefix));
 				var postfix = AccessTools.Method(typeof(HarmonyPatches), nameof(HarmonyPatches.TryGiveJobPostfix));
 				foreach (var type in GenTypes.AllSubclasses(typeof(ThinkNode_JobGiver)))
-                {
+				{
 					if (type.Namespace == "Brrr")
-                    {
+					{
 						var method = AccessTools.Method(type, "TryGiveJob");
 						harmony.Patch(method, new HarmonyMethod(prefix), new HarmonyMethod(postfix));
-                    }
-                }
+					}
+				}
 
 				var genNewRRJobMethod = AccessTools.Method("Brrr.BrrrGlobals:GenNewRRJob");
 				harmony.Patch(genNewRRJobMethod, new HarmonyMethod(typeof(HarmonyPatches), nameof(HarmonyPatches.GenNewRRJobPrefix)));
@@ -60,7 +60,7 @@ namespace ProxyHeat
 			{
 				var instruction = list[i];
 				if (i == 177)
-                {
+				{
 					found = true;
 				}
 				if (found && !inserted)
@@ -113,7 +113,7 @@ namespace ProxyHeat
 
 		private static Pawn pawnToLookUp;
 		public static void TryGiveJobPrefix(Pawn pawn)
-        {
+		{
 			pawnToLookUp = pawn;
 		}
 		public static void TryGiveJobPostfix(Pawn pawn)
@@ -124,7 +124,7 @@ namespace ProxyHeat
 		public static bool GenNewRRJobPrefix(ref Job __result, JobDef def, Region reg)
 		{
 			if (pawnToLookUp != null)
-            {
+			{
 				var map = reg.Map;
 				var tempRange = pawnToLookUp.ComfortableTemperatureRange();
 				if (reg.Room.UsesOutdoorTemperature && proxyHeatManagers.TryGetValue(map, out ProxyHeatManager proxyHeatManager))
@@ -133,7 +133,7 @@ namespace ProxyHeat
 					foreach (var tempSource in proxyHeatManager.temperatureSources)
 					{
 						if (reg.Room.ContainsCell(tempSource.Key))
-                        {
+						{
 							var result = proxyHeatManager.GetTemperatureOutcomeFor(tempSource.Key, GenTemperature.GetTemperatureForCell(tempSource.Key, map));
 							if (tempRange.Includes(result))
 							{
@@ -175,18 +175,18 @@ namespace ProxyHeat
 			private static void Postfix(Building __instance)
 			{
 				if (proxyHeatManagers.TryGetValue(__instance.Map, out ProxyHeatManager proxyHeatManager))
-                {
+				{
 					foreach (var comp in proxyHeatManager.compTemperatures)
-                    {
+					{
 						if (comp.InRangeAndActive(__instance.Position))
-                        {
+						{
 							proxyHeatManager.MarkDirty(comp);
 						}
-                    }
-                }
+					}
+				}
 			}
 		}
-		
+
 		[HarmonyPatch(typeof(Building), nameof(Building.DeSpawn))]
 		public static class Patch_DeSpawn
 		{
@@ -209,9 +209,9 @@ namespace ProxyHeat
 		public static class Patch_TemperatureString
 		{
 			private static string indoorsUnroofedStringCached;
-		
+
 			private static int indoorsUnroofedStringCachedRoofCount = -1;
-		
+
 			private static bool Prefix(ref string __result)
 			{
 				IntVec3 intVec = UI.MouseCell();
@@ -273,23 +273,19 @@ namespace ProxyHeat
 				var map = Find.CurrentMap;
 				float num = 0f;
 				if (room == null || c.Fogged(map))
-                {
+				{
 					num = GetOutDoorTemperature(Find.CurrentMap.mapTemperature.OutdoorTemp, map, c);
 				}
-				else if (room.UsesOutdoorTemperature)
+				else
 				{
 					num = GetOutDoorTemperature(room.Temperature, map, c);
-				}
-				else
-                {
-					num = room.Temperature;
 				}
 				__result = text + " " + num.ToStringTemperature("F0");
 				return false;
 			}
-		
+
 			private static float GetOutDoorTemperature(float result, Map map, IntVec3 cell)
-            {
+			{
 				if (proxyHeatManagers.TryGetValue(map, out ProxyHeatManager proxyHeatManager))
 				{
 					return proxyHeatManager.GetTemperatureOutcomeFor(cell, result);
@@ -318,13 +314,43 @@ namespace ProxyHeat
 			private static void Prefix(Plant __instance)
 			{
 				if (ProxyHeatMod.settings.allowPlantGrowthInsideProxyHeatEffectRadius)
-                {
+				{
 					checkForPlantGrowth = true;
 				}
 			}
-			private static void Postfix(Plant __instance)
+			private static void Postfix(Plant __instance, float __result)
 			{
 				checkForPlantGrowth = false;
+			}
+		}
+
+
+		[HarmonyPatch(typeof(PlantUtility), nameof(PlantUtility.GrowthSeasonNow))]
+		public static class Patch_GrowthSeasonNow
+		{
+			private static bool Prefix(ref bool __result, IntVec3 c, Map map, bool forSowing = false)
+			{
+				if (ProxyHeatMod.settings.allowPlantGrowthInsideProxyHeatEffectRadius)
+                {
+					if (proxyHeatManagers.TryGetValue(map, out ProxyHeatManager proxyHeatManager))
+					{
+						var tempResult = proxyHeatManager.GetTemperatureOutcomeFor(c, 0f);
+						if (tempResult != 0)
+                        {
+							float temperature = c.GetTemperature(map) + tempResult;
+							if (temperature > 0f)
+							{
+								__result = temperature < 58f;
+							}
+							else
+                            {
+								__result = false;
+                            }
+							return false;
+						}
+					}
+				}
+				return true;
 			}
 		}
 
