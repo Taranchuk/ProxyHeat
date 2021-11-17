@@ -192,7 +192,7 @@ namespace ProxyHeat
 		{
 			private static void Prefix(Building __instance)
 			{
-				if (proxyHeatManagers.TryGetValue(__instance.Map, out ProxyHeatManager proxyHeatManager))
+				if (__instance.Map != null && proxyHeatManagers.TryGetValue(__instance.Map, out ProxyHeatManager proxyHeatManager))
 				{
 					foreach (var comp in proxyHeatManager.compTemperatures)
 					{
