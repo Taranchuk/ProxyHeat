@@ -52,53 +52,50 @@ namespace ProxyHeat
 
 		public static IEnumerable<CodeInstruction> JobGiver_BrrrTranspiler(IEnumerable<CodeInstruction> instructions)
 		{
-			var jobDefInfo = AccessTools.Field(AccessTools.TypeByName("BrrrJobDef"), "Brrr_BrrrRecovery");
+			var jobDefInfo = AccessTools.Field(AccessTools.TypeByName("Brrr.JobGiver_Brrr+BrrrJobDef"), "Brrr_BrrrRecovery");
 			bool found = false;
-			bool inserted = false;
 			var list = instructions.ToList();
 			for (int i = 0; i < list.Count; i++)
 			{
 				var instruction = list[i];
-				if (i == 177)
+				yield return instruction;
+				if (jobDefInfo != null && !found && i > 1 && list[i - 1].opcode == OpCodes.Brfalse_S && list[i].LoadsField(jobDefInfo) && i < list.Count - 1 && list[i + 1].opcode == OpCodes.Ldloc_S)
 				{
+					yield return new CodeInstruction(OpCodes.Ldarg_1);
+					yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(HarmonyPatches), "BrrrJob"));
+					i += 2;
 					found = true;
 				}
-				if (found && !inserted)
-				{
-					var method = AccessTools.Method(typeof(HarmonyPatches), "BrrrJob");
-					yield return new CodeInstruction(OpCodes.Ldfld, jobDefInfo);
-					yield return new CodeInstruction(OpCodes.Ldarg_1);
-					yield return new CodeInstruction(OpCodes.Call, method);
-					yield return new CodeInstruction(OpCodes.Ret);
-					inserted = true;
-				}
-				yield return instruction;
+			}
+			if (jobDefInfo is null)
+			{
+				Log.Error("Proxy Heat failed to transpile Brr and Phew");
 			}
 		}
 		public static IEnumerable<CodeInstruction> JobGiver_PhewTranspiler(IEnumerable<CodeInstruction> instructions)
 		{
-			var jobDefInfo = AccessTools.Field(AccessTools.TypeByName("BrrrJobDef"), "Brrr_PhewRecovery");
+			var jobDefInfo = AccessTools.Field(AccessTools.TypeByName("Brrr.JobGiver_Phew+BrrrJobDef"), "Brrr_PhewRecovery");
 			bool found = false;
-			bool inserted = false;
 			var list = instructions.ToList();
 			for (int i = 0; i < list.Count; i++)
 			{
 				var instruction = list[i];
-				if (i == 179)
+				yield return instruction;
+
+				if (jobDefInfo != null && !found && i > 1 && list[i - 1].opcode == OpCodes.Brfalse_S && 
+					list[i].LoadsField(jobDefInfo) && i < list.Count - 1 && list[i + 1].opcode == OpCodes.Ldloc_S)
 				{
+					yield return new CodeInstruction(OpCodes.Ldarg_1);
+					yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(HarmonyPatches), "BrrrJob"));
+					i += 4;
 					found = true;
 				}
-				if (found && !inserted)
-				{
-					var method = AccessTools.Method(typeof(HarmonyPatches), "BrrrJob");
-					yield return new CodeInstruction(OpCodes.Ldfld, jobDefInfo);
-					yield return new CodeInstruction(OpCodes.Ldarg_1);
-					yield return new CodeInstruction(OpCodes.Call, method);
-					yield return new CodeInstruction(OpCodes.Ret);
-					inserted = true;
-				}
-				yield return instruction;
+
 			}
+			if (jobDefInfo is null)
+            {
+				Log.Error("Proxy Heat failed to transpile Brr and Phew");
+            }
 		}
 		public static Job BrrrJob(JobDef def, Pawn pawn)
 		{
