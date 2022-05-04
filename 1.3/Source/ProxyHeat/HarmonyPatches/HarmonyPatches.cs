@@ -203,91 +203,32 @@ namespace ProxyHeat
 		}
 
 		[HarmonyPatch(typeof(GlobalControls), "TemperatureString")]
-		public static class Patch_TemperatureString
+		public static class GlobalControls_TemperatureString_Patch
 		{
-			private static string indoorsUnroofedStringCached;
-
-			private static int indoorsUnroofedStringCachedRoofCount = -1;
-
-			private static bool Prefix(ref string __result)
+			[HarmonyPriority(int.MinValue)]
+			public static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> codeInstructions)
 			{
-				IntVec3 intVec = UI.MouseCell();
-				IntVec3 c = intVec;
-				Room room = intVec.GetRoom(Find.CurrentMap);
-				if (room == null)
+				var codes = codeInstructions.ToList();
+				for (var i = 0; i < codes.Count; i++)
 				{
-					for (int i = 0; i < 9; i++)
+					var code = codes[i];
+					yield return code;
+					if (code.opcode == OpCodes.Stloc_S && code.operand is LocalBuilder lb && lb.LocalIndex == 4)
 					{
-						IntVec3 intVec2 = intVec + GenAdj.AdjacentCellsAndInside[i];
-						if (intVec2.InBounds(Find.CurrentMap))
-						{
-							Room room2 = intVec2.GetRoom(Find.CurrentMap);
-							if (room2 != null && ((!room2.PsychologicallyOutdoors && !room2.UsesOutdoorTemperature) || (!room2.PsychologicallyOutdoors && (room == null || room.PsychologicallyOutdoors)) || (room2.PsychologicallyOutdoors && room == null)))
-							{
-								c = intVec2;
-								room = room2;
-							}
-						}
+						yield return new CodeInstruction(OpCodes.Ldloca_S, 4);
+						yield return new CodeInstruction(OpCodes.Ldloc_1);
+						yield return new CodeInstruction(OpCodes.Call, AccessTools.PropertyGetter(typeof(Find), nameof(Find.CurrentMap)));
+						yield return new CodeInstruction(OpCodes.Call, AccessTools.Method(typeof(GlobalControls_TemperatureString_Patch), nameof(ModifyTemperatureIfNeeded)));
 					}
 				}
-				if (room == null && intVec.InBounds(Find.CurrentMap))
-				{
-					Building edifice = intVec.GetEdifice(Find.CurrentMap);
-					if (edifice != null)
-					{
-						foreach (IntVec3 item in edifice.OccupiedRect().ExpandedBy(1).ClipInsideMap(Find.CurrentMap))
-						{
-							room = item.GetRoom(Find.CurrentMap);
-							if (room != null && !room.PsychologicallyOutdoors)
-							{
-								c = item;
-								break;
-							}
-						}
-					}
-				}
-				string text;
-				if (c.InBounds(Find.CurrentMap) && !c.Fogged(Find.CurrentMap) && room != null && !room.PsychologicallyOutdoors)
-				{
-					if (room.OpenRoofCount == 0)
-					{
-						text = "Indoors".Translate();
-					}
-					else
-					{
-						if (indoorsUnroofedStringCachedRoofCount != room.OpenRoofCount)
-						{
-							indoorsUnroofedStringCached = "IndoorsUnroofed".Translate() + " (" + room.OpenRoofCount.ToStringCached() + ")";
-							indoorsUnroofedStringCachedRoofCount = room.OpenRoofCount;
-						}
-						text = indoorsUnroofedStringCached;
-					}
-				}
-				else
-				{
-					text = "Outdoors".Translate();
-				}
-				var map = Find.CurrentMap;
-				float num = 0f;
-				if (room == null || c.Fogged(map))
-				{
-					num = GetOutDoorTemperature(Find.CurrentMap.mapTemperature.OutdoorTemp, map, c);
-				}
-				else
-				{
-					num = GetOutDoorTemperature(room.Temperature, map, c);
-				}
-				__result = text + " " + num.ToStringTemperature("F0");
-				return false;
 			}
 
-			private static float GetOutDoorTemperature(float result, Map map, IntVec3 cell)
+			public static void ModifyTemperatureIfNeeded(ref float result, IntVec3 cell, Map map)
 			{
 				if (proxyHeatManagers.TryGetValue(map, out ProxyHeatManager proxyHeatManager))
 				{
-					return proxyHeatManager.GetTemperatureOutcomeFor(cell, result);
+					result = proxyHeatManager.GetTemperatureOutcomeFor(cell, result);
 				}
-				return result;
 			}
 		}
 
