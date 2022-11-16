@@ -1,0 +1,7 @@
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\ProxyHeat\1.4\Assemblies\ProxyHeat.dll
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\ProxyHeat\1.4\Assemblies\ProxyHeat.pdb
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\ProxyHeat\1.4\Source\ProxyHeat\obj\Debug\ProxyHeat.csproj.AssemblyReference.cache
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\ProxyHeat\1.4\Source\ProxyHeat\obj\Debug\ProxyHeat.csproj.CoreCompileInputs.cache
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\ProxyHeat\1.4\Source\ProxyHeat\obj\Debug\ProxyHeat.csproj.CopyComplete
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\ProxyHeat\1.4\Source\ProxyHeat\obj\Debug\ProxyHeat.dll
+C:\Program Files (x86)\Steam\steamapps\common\RimWorld\Mods\ProxyHeat\1.4\Source\ProxyHeat\obj\Debug\ProxyHeat.pdb
